@@ -178,7 +178,6 @@ wpscanMenu (){
 }
 
 wpscanLauncher(){
-  target_url="https://lol.Com"
   if [ -z "$target_url" ]; then
     whiptail --backtitle "Soflane toolbox" --msgbox "No URL set! Will ask you on next screen..." 10 100
     URLValidation
