@@ -3,7 +3,6 @@
 # - send output to file 
 
 # Set API keys if there is any
-
 if [[ -n "${HUNTER_IO_API_KEY}" ]]; then
   mosint set hunter $HUNTER_IO_API_KEY
   sleep 0.3
@@ -53,14 +52,47 @@ nexfilMainMenu=(
     "Specify timeout [Default : 5]"
     "Back to main menu"
 )
+MainMenu=(1 "Mosint" 
+          2 "Nexfil" 
+          3 "WP Scan - WordPress scan" 
+          4 "Set API keys" 
+          5 "Exit" )
+nexfilMainMenuTitle="Select task"
+nexfilMainMenu=(1 "Specify username" 
+                2 "Specify a file containing username list" 
+                3 "Specify multiple comma separated usernames" 
+                4 "Specify timeout [Default : 5]" 
+                5 "Back to main menu" )
 
-wpscanMainMenu=(
-    "Configure options"
-    "Set target website"
-    "Start WPScan"
-    "Back to main menu"
-)
 
+wpscanMainMenuTitle="What do you want to do?"
+wpscanMainMenu=(1 "Configure WPscan options" 
+                2 "Set target website" 
+                3 "Start WPScan" 
+                4 "Back to main menu" )
+
+wpConfigPluginsMenuTitle="Which plugins do you want to scan on target?"
+wpConfigPluginsRadioMenu=("vp" "Vulnerable plugins" OFF
+                          "ap" "All plugins" ON
+                          "p"  "Popular plugins" OFF
+                          ""   "None" OFF
+                          )
+wpConfigThemeMenuTitle="Which themes do you want to scan on target?"
+wpConfigThemeRadioMenu=("vp" "Vulnerable themes" OFF
+                        "ap" "All themes" ON
+                        "p"  "Popular themes" OFF
+                        ""   "None" OFF
+                        )
+wpConfigChecklistTitle="Select the options wanted"
+wpConfigChecklistItems=("tt"     "Timthumbs" OFF
+                        "cb"     "Config backups" OFF
+                        "dbe"    "Db exports" OFF
+                        "u1-100" "User IDs range 1-100" ON
+                        "m1-100" "Media IDs range 1-100" ON
+                        )
+
+wpOptions=""
+wpOptions_defaults=$true
 
 
 mosintMenu () {
@@ -87,20 +119,19 @@ mosintMenu () {
     mosint $email
   fi
 }
-
-wpscanMenu (){
-  wpscan --update
+URLValidation (){
   tries=1
   while [ $tries -le 3 ]
   do
-    read -p "Enter admin URL: " url
+    url=$(whiptail --backtitle "Soflane toolbox" --inputbox "Please the website target :" 10 100 3>&1 1>&2 2>&3)
     echo
     if [[ "$url" =~ $URLregex ]]
     then
       echo "URL $url is valid."
+      whiptail --backtitle "Soflane toolbox" --msgbox "URL is valid, will be saved." 10 100
       break
     else
-      echo "URL $url is invalid."
+      whiptail --backtitle "Soflane toolbox" --msgbox "URL must be valid." 10 100
       url="invalid"
     fi
     tries=$(( $tries + 1 ))
@@ -108,48 +139,134 @@ wpscanMenu (){
   if [ $url == 'invalid' ]
   then
     echo "URL must be valid. Exiting..."
+    whiptail --backtitle "Soflane toolbox" --msgbox "URL must be valid. Exiting..." 10 100
     exit
   else
-    wpscan --url $url --ignore-main-redirect --enumerate u 
+    target_url=$url
+    # wpscan --url $url --ignore-main-redirect --enumerate u 
+  fi
+}
+wpscanMenu (){
+  # wpscan --update
+  wpOptions_defaults=$true
+  wpscanMenu_choice=$(whiptail --backtitle "Soflane toolbox"  --menu --notags  "$wpscanMainMenuTitle" 18 100 10 "${wpscanMainMenu[@]}" 3>&1 1>&2 2>&3)
+  if [ -z "$wpscanMenu_choice" ]; then
+    echo "No option was chosen (user hit Cancel)"
+  else
+    case $wpscanMenu_choice in
+      1)
+        wpscanConfigMenu
+      ;;
+      2)
+        URLValidation
+        wpscanMenu
+      ;;
+      3)
+        wpscanLauncher
+      ;;
+      4)
+        echo "MainMenu to do"
+      ;;
+    esac
+  fi
+
+
+
+
+
+
+}
+
+wpscanLauncher(){
+  target_url="https://lol.Com"
+  if [ -z "$target_url" ]; then
+    whiptail --backtitle "Soflane toolbox" --msgbox "No URL set! Will ask you on next screen..." 10 100
+    URLValidation
+  fi
+  if [ $wpOptions_defaults ]; then
+    wpscan --url $target_url --ignore-main-redirect
+  else
+    wpscan --url $target_url --ignore-main-redirect --enumerate $wpOptions
+  fi
+  read -n 1 -r -s -p $'Press enter to continue...\n'; clear
+}
+wpscanConfigMenu() {
+  wpPluginsMenu_choice=$(whiptail --backtitle "Soflane toolbox" --separate-output --radiolist "$wpConfigPluginsMenuTitle" 18 100 10 "${wpConfigPluginsRadioMenu[@]}" 3>&1 1>&2 2>&3)
+  if [ -z "$wpPluginsMenu_choice" ]; then
+    echo "No option was chosen (user hit Cancel)"
+    wpscanMenu
+  else
+    options="${wpPluginsMenu_choice}"
+    wpThemesMenu_choice=$(whiptail --backtitle "Soflane toolbox" --separate-output --radiolist "$wpConfigThemeMenuTitle" 18 100 10 "${wpConfigThemeRadioMenu[@]}" 3>&1 1>&2 2>&3)
+    if [ -z "$wpThemesMenu_choice" ]; then
+      echo "No option was chosen (user hit Cancel)"
+      wpscanMenu
+    else
+      options="${options},${wpThemesMenu_choice}"
+      wpConfigMenu_choice=$(whiptail --backtitle "Soflane toolbox" --separate-output --checklist "$wpConfigChecklistTitle" 18 100 10 "${wpConfigChecklistItems[@]}" 3>&1 1>&2 2>&3)
+      if [ -z "$wpConfigMenu_choice" ]; then
+        echo "No option was selected (user hit Cancel or unselected all options)"
+        wpscanMenu
+      else
+        for choice in $wpConfigMenu_choice; do
+          options="${options},${choice}"
+        done
+        wpOptions=$options
+        wpOptions_defaults=$false
+        wpscanMenu
+      fi
+    fi
   fi
 }
 
 
 while $true
 do
-  getChoice -q "What do want to do ?" -o mainMenuOptions -i 3 -v "mainMenuChoice"
+  getChoice -q "What do want to do ?" -o mainMenuOptions -i 2 -v "mainMenuChoice"
   case $mainMenuChoice in
       "Mosint" )
           mosintMenu
           ;;
       "Nexfil" )
-          getChoice -q "Nexfil usage menu" -o nexfilMainMenu -i 3 -v "nexfilMainMenuChoice" 
-          case $nexfilMainMenuChoice in
-              "Specify username"  ) 
-                  read -p "Enter username to search : " username
+          nexfilMenu_choice=$(whiptail --backtitle "Soflane toolbox"  --menu --notags  "$nexfilMainMenuTitle" 18 100 10 "${nexfilMainMenu[@]}" 3>&1 1>&2 2>&3)
+          if [ -z "$nexfilMenu_choice" ]; then
+            echo "No option was chosen (user hit Cancel)"
+          else
+            case $nexfilMenu_choice in
+              1)
+                username=$(whiptail --backtitle "Soflane toolbox" --inputbox "Enter username to search : " 10 100 3>&1 1>&2 2>&3)
+                if [ -z "$nexfilMenu_choice" ]; then
+                  echo "No option was chosen (user hit Cancel)"
+                else
                   cd /tools/nexfil/
                   python3 nexfil.py -u $username
-                  read -n 1 -r -s -p $'Press enter to continue...\n' ; clear
-                  ;;
-              "Specify a file containing username list" ) 
-                  echo "WORK IN PROGRESS"
-                  ;;
-              "Specify multiple comma separated usernames"  ) 
-                  read -p "Enter usernames to search separated by a \",\": "
-                  nexfil.py -l 
-                  read -n 1 -r -s -p $'Press enter to continue...\n' ; clear
-                  ;;
-              "Specify timeout [Default : 5]"  ) 
-                  echo "WORK IN PROGRESS"
-                  ;;
-              "Back to main menu"  ) 
-                  
-                  ;;
-          esac
+                fi
+                read -n 1 -r -s -p $'Press enter to continue...\n' ; clear
+              ;;
+              2)
+                echo "WORK IN PROGRESS"
+              ;;
+              3)
+                usernames=$(whiptail --backtitle "Soflane toolbox" --inputbox "Enter usernames to search separated by a \",\": " 10 100 3>&1 1>&2 2>&3)
+                if [ -z "$nexfilMenu_choice" ]; then
+                  echo "No option was chosen (user hit Cancel)"
+                else
+                 nexfil.py -l $usernames
+                fi
+                read -n 1 -r -s -p $'Press enter to continue...\n'; clear
+              ;;
+              4)
+                echo "WORK IN PROGRESS"
+                read -n 1 -r -s -p $'Press enter to continue...\n'; clear
+              ;;
+              5)
+                echo "Return Main menu"
+              ;;
+            esac
+          fi
           ;;
       "WP Scan - WordPress scan" )
           wpscanMenu
-          read -n 1 -r -s -p $'Press enter to continue...\n' ; clear
           ;;
       "Set API keys" )
           echo "API" 
@@ -162,177 +279,3 @@ do
 
 done
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# function print_menu()  # selected_item, ...menu_items
-# {
-# 	local function_arguments=($@)
-
-# 	local selected_item="$1"
-# 	local menu_items=("${function_arguments[@]:1}")
-# 	local menu_size="${#menu_items[@]}"
-
-# 	for (( i = 0; i < $menu_size; ++i ))
-# 	do
-# 		if [ "$i" = "$selected_item" ]
-# 		then
-# 			echo "-> ${menu_items[i]}"
-# 		else
-# 			echo "   ${menu_items[i]}"
-# 		fi
-# 	done
-# }
-
-# function run_menu()  # selected_item, ...menu_items
-# {
-# 	local function_arguments=($@)
-
-# 	local selected_item="$1"
-# 	local menu_items=("${function_arguments[@]:1}")
-# 	local menu_size="${#menu_items[@]}"
-# 	local menu_limit=$((menu_size - 1))
-
-# 	clear
-# 	print_menu "$selected_item" "${menu_items[@]}"
-	
-# 	while read -rsn1 input
-# 	do
-# 		case "$input"
-# 		in
-# 			$'\x1B')  # ESC ASCII code (https://dirask.com/posts/ASCII-Table-pJ3Y0j)
-# 				read -rsn1 -t 0.1 input
-# 				if [ "$input" = "[" ]  # occurs before arrow code
-# 				then
-# 					read -rsn1 -t 0.1 input
-# 					case "$input"
-# 					in
-# 						A)  # Up Arrow
-# 							if [ "$selected_item" -ge 1 ]
-# 							then
-# 								selected_item=$((selected_item - 1))
-# 								clear
-# 								print_menu "$selected_item" "${menu_items[@]}"
-# 							fi
-# 							;;
-# 						B)  # Down Arrow
-# 							if [ "$selected_item" -lt "$menu_limit" ]
-# 							then
-# 								selected_item=$((selected_item + 1))
-# 								clear
-# 								print_menu "$selected_item" "${menu_items[@]}"
-# 							fi
-# 							;;
-# 					esac
-# 				fi
-# 				read -rsn5 -t 0.1  # flushing stdin
-# 				;;
-# 			"")  # Enter key
-# 				return "$selected_item"
-# 				;;
-# 		esac
-# 	done
-# }
-
-
-# # Usage example:
-
-# selected_item=0
-# menu_items=("Mosint" "Nexfil" "Set API keys" "Exit")
-
-# run_menu "$selected_item" "${menu_items[@]}"
-# menu_result="$?"
-
-# echo
-
-# case "$menu_result"
-# in
-# 	0)
-# 		echo 'Login item selected'
-# 		;;
-# 	1)
-# 		echo 'Register item selected'
-# 		;;
-# 	2)
-# 		echo 'Guest item selected'
-# 		;;
-# 	3)
-# 		echo 'Exit item selected'
-# 		;;
-# esac
