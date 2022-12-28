@@ -80,13 +80,13 @@ wpConfigPluginsMenuTitle="Which plugins do you want to scan on target?"
 wpConfigPluginsMenuItems=("vp" "Vulnerable plugins" OFF
                           "ap" "All plugins" ON
                           "p"  "Popular plugins" OFF
-                          ""   "None" OFF
+                          " "   "None" OFF
                           )
 wpConfigThemeMenuTitle="Which themes do you want to scan on target?"
-wpConfigThemeMenuItems=("vp" "Vulnerable themes" OFF
-                        "ap" "All themes" ON
-                        "p"  "Popular themes" OFF
-                        ""   "None" OFF
+wpConfigThemeMenuItems=("vt" "Vulnerable themes" OFF
+                        "at" "All themes" ON
+                        "t"  "Popular themes" OFF
+                        " "   "None" OFF
                         )
 wpConfigEnumMenuTitle="Select the unumeration options wanted"
 wpConfigEnumMenuItems=("tt"     "Timthumbs" OFF
@@ -208,33 +208,46 @@ wpscanLauncher(){
     echo "add API"
   fi
   if [ -n "$target_url" ]; then
+    # For testing purposes
+    # echo "wpscan -o /output/wpscan-$(echo "$target_url" | tr " " "\n"  | sed 's/^"//; s/"$//; s~^https\?://~~; s/:[0-9]\+$//').txt --url $target_url --ignore-main-redirect $args"
     wpscan -o /output/wpscan-$(echo "$target_url" | tr " " "\n"  | sed 's/^"//; s/"$//; s~^https\?://~~; s/:[0-9]\+$//').txt --url $target_url --ignore-main-redirect $args
     read -n 1 -r -s -p $'Press enter to continue...\n'; clear
   fi
 }
 
 wpscanConfigMenu() {
+  declare -a options=()
   wpPluginsMenu_choice=$(whiptail --backtitle "Soflane toolbox" --separate-output --radiolist "$wpConfigPluginsMenuTitle" 18 100 10 "${wpConfigPluginsMenuItems[@]}" 3>&1 1>&2 2>&3)
   if [ -z "$wpPluginsMenu_choice" ]; then
     echo "No option was chosen (user hit Cancel)"
     wpscanMenu
   else
-    options="${wpPluginsMenu_choice}"
+    if [ "$wpPluginsMenu_choice" != " " ]; then
+      # options+=("${wpPluginsMenu_choice}")
+      options=(${options[@]} "${wpPluginsMenu_choice}")
+    fi
     wpThemesMenu_choice=$(whiptail --backtitle "Soflane toolbox" --separate-output --radiolist "$wpConfigThemeMenuTitle" 18 100 10 "${wpConfigThemeMenuItems[@]}" 3>&1 1>&2 2>&3)
     if [ -z "$wpThemesMenu_choice" ]; then
       echo "No option was chosen (user hit Cancel)"
       wpscanMenu
     else
-      options="${options},${wpThemesMenu_choice}"
+      if [ "$wpThemesMenu_choice" != " " ]; then
+        options=(${options[@]} "${wpThemesMenu_choice}")
+      fi
       wpConfigMenu_choice=$(whiptail --backtitle "Soflane toolbox" --separate-output --checklist "$wpConfigEnumMenuTitle" 18 100 10 "${wpConfigEnumMenuItems[@]}" 3>&1 1>&2 2>&3)
       if [ -z "$wpConfigMenu_choice" ]; then
         echo "No option was selected (user hit Cancel or unselected all options)"
         wpscanMenu
       else
         for choice in $wpConfigMenu_choice; do
-          options="${options},${choice}"
+          options=(${options[@]} "${choice}")
         done
-        wpOptions=$options
+        for index in "${!options[@]}"; do
+          if [ "$index" != 0 ]; then
+             wpOptions="$wpOptions,"
+          fi
+          wpOptions="$wpOptions${options[$index]}"
+        done
         wpOptions_defaults=false
         wpscanMenu
       fi
