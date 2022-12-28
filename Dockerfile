@@ -3,8 +3,8 @@ LABEL maintainer="Soflane <dev@ayoute.be>"
 RUN apk add --update --no-cache git \
             py3-pip go make \
             nano bash curl libcurl ncurses \
-            # whiptail
-            newt \
+            # whiptail & dialog
+            newt dialog\
             # WPscan requirements
             ruby ruby-dev libffi-dev gcc zlib-dev procps sqlite-dev musl-dev \
             py3-setuptools py3-wheel py3-aiohttp py3-frozenlist py3-multidict py3-yarl &&\

@@ -2,33 +2,6 @@
 # TODO
 # - send output to file 
 
-# Set API keys if there is any
-if [[ -n "${HUNTER_IO_API_KEY}" ]]; then
-  mosint set hunter $HUNTER_IO_API_KEY
-  sleep 0.3
-fi
-if [[ -n "${EMAILREP_IO_API_KEY}" ]]; then
-  mosint set emailrep $EMAILREP_IO_API_KEY
-  sleep 0.3
-fi
-if [[ -n "${INTELLIGENCE_X_API_KEY}" ]]; then
-  mosint set intelx $INTELLIGENCE_X_API_KEY
-  sleep 0.3
-fi
-if [[ -n "${PASTEBIN_DUMPS_API_KEY}" ]]; then
-  mosint set psbdmp $PASTEBIN_DUMPS_API_KEY
-  sleep 0.3
-fi
-if [[ -n "${BREACHDIRECTORY_ORG_API_KEY}" ]]; then
-  mosint set breachdirectory $BREACHDIRECTORY_ORG_API_KEY
-  sleep 0.3
-fi
-if [[ -n "${WPSCAN_API}" ]]; then
-  echo "WPScan API key detected"
-  sleep 0.3
-fi
-clear
-
 # Import needed sources
 # menu choices getChoice function 
 source <(wget -qO- https://raw.githubusercontent.com/the0neWhoKnocks/shell-menu-select/master/get-choice.sh)
@@ -36,7 +9,9 @@ source <(wget -qO- https://raw.githubusercontent.com/the0neWhoKnocks/shell-menu-
 URLregex='(https?|ftp|file)://[-[:alnum:]\+&@#/%?=~_|!:,.;]*[-[:alnum:]\+&@#/%=~_|]'
 emailRegex="^(([-a-zA-Z0-9\!#\$%\&\'*+/=?^_\`{\|}~]+|(\"([][,:;<>\&@a-zA-Z0-9\!#\$%\&\'*+/=?^_\`{\|}~-]|(\\\\[\\ \"]))+\"))\.)*([-a-zA-Z0-9\!#\$%\&\'*+/=?^_\`{\|}~]+|(\"([][,:;<>\&@a-zA-Z0-9\!#\$%\&\'*+/=?^_\`{\|}~-]|(\\\\[\\ \"]))+\"))@\w((-|\w)*\w)*\.(\w((-|\w)*\w)*\.)*\w{2,4}$"
 
-
+windowTitle="Soflane toolbox"
+wpOptions=""
+wpOptions_defaults=true
 # Menu definitions 
 mainMenuOptions=(
     "Mosint"
@@ -95,9 +70,48 @@ wpConfigEnumMenuItems=("tt"     "Timthumbs" OFF
                         "u1-100" "User IDs range 1-100" ON
                         "m1-100" "Media IDs range 1-100" ON
                         )
-wpOptions=""
-wpOptions_defaults=true
+apiKeyMenuTitle="Config API keys"
+apiKeyMenuItems=("hunter.io API key"            1    1     "${HUNTER_IO_API_KEY}"                1  25  25  30
+                 "emailrep.io API key"          2    1     "${EMAILREP_IO_API_KEY}"              2  25  25  30
+                 "Intelligence X API key"       3    1     "${INTELLIGENCE_X_API_KEY}"           3  25  25  30
+                 "Pastebin Dumps API key"       4    1     "${PASTEBIN_DUMPS_API_KEY}"           4  25  25  30
+                 "Breach Directory API key"     5    1     "${BREACHDIRECTORY_ORG_API_KEY}"      5  25  25  30
+                 "WPScan API key"               6    1     "${WPSCAN_API}"                       6  25  25  30
+                 )
 
+
+storeAPIkeys () {
+  # Set API keys if there is any
+  if [[ -n "${HUNTER_IO_API_KEY}" ]]; then
+    mosint set hunter $HUNTER_IO_API_KEY
+    sleep 0.3
+    echo "api key set HUNTER_IO_API_KEY"
+  fi
+  if [[ -n "${EMAILREP_IO_API_KEY}" ]]; then
+    mosint set emailrep $EMAILREP_IO_API_KEY
+    sleep 0.3
+    echo "api key set EMAILREP_IO_API_KEY"
+  fi
+  if [[ -n "${INTELLIGENCE_X_API_KEY}" ]]; then
+    mosint set intelx $INTELLIGENCE_X_API_KEY
+    sleep 0.3
+    echo "api key set INTELLIGENCE_X_API_KEY"
+  fi
+  if [[ -n "${PASTEBIN_DUMPS_API_KEY}" ]]; then
+    mosint set psbdmp $PASTEBIN_DUMPS_API_KEY
+    sleep 0.3
+    echo "api key set PASTEBIN_DUMPS_API_KEY"
+  fi
+  if [[ -n "${BREACHDIRECTORY_ORG_API_KEY}" ]]; then
+    mosint set breachdirectory $BREACHDIRECTORY_ORG_API_KEY
+    sleep 0.3
+    echo "api key set BREACHDIRECTORY_ORG_API_KEY"
+  fi
+  if [[ -n "${WPSCAN_API}" ]]; then
+    echo "WPScan API key detected"
+    sleep 0.3
+  fi
+}
 
 mosintMenu () {
   tries=1
@@ -135,16 +149,16 @@ URLValidation (){
   tries=1
   while [ $tries -le 3 ]
   do
-    url=$(whiptail --backtitle "Soflane toolbox" --inputbox "Please the website target :" 10 100 3>&1 1>&2 2>&3)
+    url=$(whiptail --backtitle "$windowTitle" --inputbox "Please the website target :" 10 100 3>&1 1>&2 2>&3)
     echo
     
     if [[ "$url" =~ $URLregex ]]
     then
       echo "URL $url is valid."
-      whiptail --backtitle "Soflane toolbox" --msgbox "URL is valid, will be saved." 10 100
+      whiptail --backtitle "$windowTitle" --msgbox "URL is valid, will be saved." 10 100
       break
     else
-      whiptail --backtitle "Soflane toolbox" --msgbox "URL must be valid." 10 100
+      whiptail --backtitle "$windowTitle" --msgbox "URL must be valid." 10 100
       url="invalid"
       if [[ -n "${url}" ]]; then
         url="cancelled"
@@ -155,7 +169,7 @@ URLValidation (){
   done
   if [ $url == 'invalid' ]; then
     echo "URL must be valid. Exiting..."
-    whiptail --backtitle "Soflane toolbox" --msgbox "URL must be valid. Exiting..." 10 100
+    whiptail --backtitle "$windowTitle" --msgbox "URL must be valid. Exiting..." 10 100
     unset url
     exit
   elif [ $url == 'cancelled' ]; then
@@ -167,7 +181,7 @@ URLValidation (){
 
 wpscanMenu (){
   # wpscan --update
-  wpscanMenu_choice=$(whiptail --backtitle "Soflane toolbox"  --menu --notags  "$wpscanMainMenuTitle" 18 100 10 "${wpscanMainMenuItems[@]}" 3>&1 1>&2 2>&3)
+  wpscanMenu_choice=$(whiptail --backtitle "$windowTitle"  --menu --notags  "$wpscanMainMenuTitle" 18 100 10 "${wpscanMainMenuItems[@]}" 3>&1 1>&2 2>&3)
   if [ -z "$wpscanMenu_choice" ]; then
     echo "No option was chosen (user hit Cancel)"
   else
@@ -195,7 +209,7 @@ wpscanLauncher(){
     if [[ -n "${WPSCAN_TARGET_URL}" ]]; then
       target_url=$WPSCAN_TARGET_URL
     else
-      whiptail --backtitle "Soflane toolbox" --msgbox "No URL set! Will ask you on next screen..." 10 100
+      whiptail --backtitle "$windowTitle" --msgbox "No URL set! Will ask you on next screen..." 10 100
       URLValidation
     fi
   fi
@@ -217,7 +231,7 @@ wpscanLauncher(){
 
 wpscanConfigMenu() {
   declare -a options=()
-  wpPluginsMenu_choice=$(whiptail --backtitle "Soflane toolbox" --separate-output --radiolist "$wpConfigPluginsMenuTitle" 18 100 10 "${wpConfigPluginsMenuItems[@]}" 3>&1 1>&2 2>&3)
+  wpPluginsMenu_choice=$(whiptail --backtitle "$windowTitle" --separate-output --radiolist "$wpConfigPluginsMenuTitle" 18 100 10 "${wpConfigPluginsMenuItems[@]}" 3>&1 1>&2 2>&3)
   if [ -z "$wpPluginsMenu_choice" ]; then
     echo "No option was chosen (user hit Cancel)"
     wpscanMenu
@@ -226,7 +240,7 @@ wpscanConfigMenu() {
       # options+=("${wpPluginsMenu_choice}")
       options=(${options[@]} "${wpPluginsMenu_choice}")
     fi
-    wpThemesMenu_choice=$(whiptail --backtitle "Soflane toolbox" --separate-output --radiolist "$wpConfigThemeMenuTitle" 18 100 10 "${wpConfigThemeMenuItems[@]}" 3>&1 1>&2 2>&3)
+    wpThemesMenu_choice=$(whiptail --backtitle "$windowTitle" --separate-output --radiolist "$wpConfigThemeMenuTitle" 18 100 10 "${wpConfigThemeMenuItems[@]}" 3>&1 1>&2 2>&3)
     if [ -z "$wpThemesMenu_choice" ]; then
       echo "No option was chosen (user hit Cancel)"
       wpscanMenu
@@ -234,7 +248,7 @@ wpscanConfigMenu() {
       if [ "$wpThemesMenu_choice" != " " ]; then
         options=(${options[@]} "${wpThemesMenu_choice}")
       fi
-      wpConfigMenu_choice=$(whiptail --backtitle "Soflane toolbox" --separate-output --checklist "$wpConfigEnumMenuTitle" 18 100 10 "${wpConfigEnumMenuItems[@]}" 3>&1 1>&2 2>&3)
+      wpConfigMenu_choice=$(whiptail --backtitle "$windowTitle" --separate-output --checklist "$wpConfigEnumMenuTitle" 18 100 10 "${wpConfigEnumMenuItems[@]}" 3>&1 1>&2 2>&3)
       if [ -z "$wpConfigMenu_choice" ]; then
         echo "No option was selected (user hit Cancel or unselected all options)"
         wpscanMenu
@@ -256,21 +270,25 @@ wpscanConfigMenu() {
 }
 
 
+
+storeAPIkeys
+clear
+
 while $true
 do
-  getChoice -q "What do want to do ?" -o mainMenuOptions -i 2 -v "mainMenuChoice"
+  getChoice -q "What do want to do ?" -o mainMenuOptions -i 4 -v "mainMenuChoice"
   case $mainMenuChoice in
       "Mosint" )
           mosintMenu
           ;;
       "Nexfil" )
-          nexfilMenu_choice=$(whiptail --backtitle "Soflane toolbox"  --menu --notags  "$nexfilMainMenuTitle" 18 100 10 "${nexfilMainMenuItems[@]}" 3>&1 1>&2 2>&3)
+          nexfilMenu_choice=$(whiptail --backtitle "$windowTitle"  --menu --notags  "$nexfilMainMenuTitle" 18 100 10 "${nexfilMainMenuItems[@]}" 3>&1 1>&2 2>&3)
           if [ -z "$nexfilMenu_choice" ]; then
             echo "No option was chosen (user hit Cancel)"
           else
             case $nexfilMenu_choice in
               1)
-                username=$(whiptail --backtitle "Soflane toolbox" --inputbox "Enter username to search : " 10 100 3>&1 1>&2 2>&3)
+                username=$(whiptail --backtitle "$windowTitle" --inputbox "Enter username to search : " 10 100 3>&1 1>&2 2>&3)
                 if [ -z "$nexfilMenu_choice" ]; then
                   echo "No option was chosen (user hit Cancel)"
                 else
@@ -283,7 +301,7 @@ do
                 echo "WORK IN PROGRESS - File of users"
               ;;
               3)
-                usernames=$(whiptail --backtitle "Soflane toolbox" --inputbox "Enter usernames to search separated by a \",\": " 10 100 3>&1 1>&2 2>&3)
+                usernames=$(whiptail --backtitle "$windowTitle" --inputbox "Enter usernames to search separated by a \",\": " 10 100 3>&1 1>&2 2>&3)
                 if [ -z "$nexfilMenu_choice" ]; then
                   echo "No option was chosen (user hit Cancel)"
                 else
@@ -309,7 +327,18 @@ do
           echo "Nikto" 
           ;;
       "Set API keys" )
-          echo "API" 
+          
+          apiSettingsInput=$(dialog --keep-tite --backtitle "$windowTitle" --title "Dialog - Form" \
+            --form "\nDialog Sample Label and Values" 25 60 16 "${apiKeyMenuItems[@]}" \
+            3>&1 1>&2 2>&3 3>&- \
+          )          
+          HUNTER_IO_API_KEY=$(echo "$apiSettingsInput" | sed -n 1p)
+          EMAILREP_IO_API_KEY=$(echo "$apiSettingsInput" | sed -n 2p)
+          INTELLIGENCE_X_API_KEY=$(echo "$apiSettingsInput" | sed -n 3p)
+          PASTEBIN_DUMPS_API_KEY=$(echo "$apiSettingsInput" | sed -n 4p)
+          BREACHDIRECTORY_ORG_API_KEY=$(echo "$apiSettingsInput" | sed -n 5p)
+          WPSCAN_API=$(echo "$apiSettingsInput" | sed -n 6p)
+          storeAPIkeys
           ;;
       "Exit" )
           echo "End of program"
