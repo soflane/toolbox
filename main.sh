@@ -42,6 +42,7 @@ mainMenuOptions=(
     "Mosint"
     "Nexfil"
     "WP Scan - WordPress scan"
+    "Nikto - Webserver scan" 
     "Set API keys"
     "Exit"
 )
@@ -52,36 +53,43 @@ nexfilMainMenu=(
     "Specify timeout [Default : 5]"
     "Back to main menu"
 )
-MainMenu=(1 "Mosint" 
+MainMenuItems=(1 "Mosint" 
           2 "Nexfil" 
           3 "WP Scan - WordPress scan" 
-          4 "Set API keys" 
-          5 "Exit" )
+          4 "Nikto - Webserver scan" 
+          5 "Parameth - Bruteforce GET and POST parameters" 
+          6 "Aquatone - HTTP based recon" 
+          7 "LinkFinder - Endpoint discovery through JS files" 
+          8 "JS-Scan - Endpoint discovery through JS files" 
+          9 "Dirsearch - HTTP bruteforcing" 
+          10 "XSS Hunter - Blind XSS discovery" 
+          11 "Set API keys" 
+          12 "Exit" )
 nexfilMainMenuTitle="Select task"
-nexfilMainMenu=(1 "Specify username" 
-                2 "Specify a file containing username list" 
-                3 "Specify multiple comma separated usernames" 
-                4 "Specify timeout [Default : 5]" 
-                5 "Back to main menu" )
-wpscanMainMenuTitle="What do you want to do?"
-wpscanMainMenu=(1 "Configure WPscan options" 
+nexfilMainMenuItems=(1 "Specify username" 
+                     2 "Specify a file containing username list" 
+                     3 "Specify multiple comma separated usernames" 
+                     4 "Specify timeout [Default : 5]" 
+                     5 "Back to main menu" )
+wpscanMainMenuItemsTitle="What do you want to do?"
+wpscanMainMenuItems=(1 "Configure WPscan options" 
                 2 "Set target website" 
                 3 "Start WPScan" 
                 4 "Back to main menu" )
 wpConfigPluginsMenuTitle="Which plugins do you want to scan on target?"
-wpConfigPluginsRadioMenu=("vp" "Vulnerable plugins" OFF
+wpConfigPluginsMenuItems=("vp" "Vulnerable plugins" OFF
                           "ap" "All plugins" ON
                           "p"  "Popular plugins" OFF
                           ""   "None" OFF
                           )
 wpConfigThemeMenuTitle="Which themes do you want to scan on target?"
-wpConfigThemeRadioMenu=("vp" "Vulnerable themes" OFF
+wpConfigThemeMenuItems=("vp" "Vulnerable themes" OFF
                         "ap" "All themes" ON
                         "p"  "Popular themes" OFF
                         ""   "None" OFF
                         )
-wpConfigChecklistTitle="Select the options wanted"
-wpConfigChecklistItems=("tt"     "Timthumbs" OFF
+wpConfigEnumMenuTitle="Select the unumeration options wanted"
+wpConfigEnumMenuItems=("tt"     "Timthumbs" OFF
                         "cb"     "Config backups" OFF
                         "dbe"    "Db exports" OFF
                         "u1-100" "User IDs range 1-100" ON
@@ -154,13 +162,12 @@ URLValidation (){
     unset url
   else
     target_url=$url
-    # wpscan --url $url --ignore-main-redirect --enumerate u 
   fi
 }
 
 wpscanMenu (){
   # wpscan --update
-  wpscanMenu_choice=$(whiptail --backtitle "Soflane toolbox"  --menu --notags  "$wpscanMainMenuTitle" 18 100 10 "${wpscanMainMenu[@]}" 3>&1 1>&2 2>&3)
+  wpscanMenu_choice=$(whiptail --backtitle "Soflane toolbox"  --menu --notags  "$wpscanMainMenuTitle" 18 100 10 "${wpscanMainMenuItems[@]}" 3>&1 1>&2 2>&3)
   if [ -z "$wpscanMenu_choice" ]; then
     echo "No option was chosen (user hit Cancel)"
   else
@@ -207,19 +214,19 @@ wpscanLauncher(){
 }
 
 wpscanConfigMenu() {
-  wpPluginsMenu_choice=$(whiptail --backtitle "Soflane toolbox" --separate-output --radiolist "$wpConfigPluginsMenuTitle" 18 100 10 "${wpConfigPluginsRadioMenu[@]}" 3>&1 1>&2 2>&3)
+  wpPluginsMenu_choice=$(whiptail --backtitle "Soflane toolbox" --separate-output --radiolist "$wpConfigPluginsMenuTitle" 18 100 10 "${wpConfigPluginsMenuItems[@]}" 3>&1 1>&2 2>&3)
   if [ -z "$wpPluginsMenu_choice" ]; then
     echo "No option was chosen (user hit Cancel)"
     wpscanMenu
   else
     options="${wpPluginsMenu_choice}"
-    wpThemesMenu_choice=$(whiptail --backtitle "Soflane toolbox" --separate-output --radiolist "$wpConfigThemeMenuTitle" 18 100 10 "${wpConfigThemeRadioMenu[@]}" 3>&1 1>&2 2>&3)
+    wpThemesMenu_choice=$(whiptail --backtitle "Soflane toolbox" --separate-output --radiolist "$wpConfigThemeMenuTitle" 18 100 10 "${wpConfigThemeMenuItems[@]}" 3>&1 1>&2 2>&3)
     if [ -z "$wpThemesMenu_choice" ]; then
       echo "No option was chosen (user hit Cancel)"
       wpscanMenu
     else
       options="${options},${wpThemesMenu_choice}"
-      wpConfigMenu_choice=$(whiptail --backtitle "Soflane toolbox" --separate-output --checklist "$wpConfigChecklistTitle" 18 100 10 "${wpConfigChecklistItems[@]}" 3>&1 1>&2 2>&3)
+      wpConfigMenu_choice=$(whiptail --backtitle "Soflane toolbox" --separate-output --checklist "$wpConfigEnumMenuTitle" 18 100 10 "${wpConfigEnumMenuItems[@]}" 3>&1 1>&2 2>&3)
       if [ -z "$wpConfigMenu_choice" ]; then
         echo "No option was selected (user hit Cancel or unselected all options)"
         wpscanMenu
@@ -244,7 +251,7 @@ do
           mosintMenu
           ;;
       "Nexfil" )
-          nexfilMenu_choice=$(whiptail --backtitle "Soflane toolbox"  --menu --notags  "$nexfilMainMenuTitle" 18 100 10 "${nexfilMainMenu[@]}" 3>&1 1>&2 2>&3)
+          nexfilMenu_choice=$(whiptail --backtitle "Soflane toolbox"  --menu --notags  "$nexfilMainMenuTitle" 18 100 10 "${nexfilMainMenuItems[@]}" 3>&1 1>&2 2>&3)
           if [ -z "$nexfilMenu_choice" ]; then
             echo "No option was chosen (user hit Cancel)"
           else
@@ -260,7 +267,7 @@ do
                 read -n 1 -r -s -p $'Press enter to continue...\n' ; clear
               ;;
               2)
-                echo "WORK IN PROGRESS"
+                echo "WORK IN PROGRESS - File of users"
               ;;
               3)
                 usernames=$(whiptail --backtitle "Soflane toolbox" --inputbox "Enter usernames to search separated by a \",\": " 10 100 3>&1 1>&2 2>&3)
@@ -272,7 +279,8 @@ do
                 read -n 1 -r -s -p $'Press enter to continue...\n'; clear
               ;;
               4)
-                echo "WORK IN PROGRESS"
+                echo "WORK IN PROGRESS - set timeout"
+
                 read -n 1 -r -s -p $'Press enter to continue...\n'; clear
               ;;
               5)
@@ -284,6 +292,9 @@ do
       "WP Scan - WordPress scan" )
           wpscanMenu
           ;;
+      "Nikto - Webserver scan"  )
+          echo "Nikto" 
+          ;;
       "Set API keys" )
           echo "API" 
           ;;
@@ -293,3 +304,6 @@ do
           ;;
   esac
 done
+
+
+nikto -h $url -f htm -o /output/nikto-$(echo "$target_url" | tr " " "\n"  | sed 's/^"//; s/"$//; s~^https\?://~~; s/:[0-9]\+$//').html -p 20,21,25,80,443
