@@ -92,7 +92,7 @@ wpConfigChecklistItems=("tt"     "Timthumbs" OFF
                         )
 
 wpOptions=""
-wpOptions_defaults=$true
+wpOptions_defaults=true
 
 
 mosintMenu () {
@@ -148,7 +148,6 @@ URLValidation (){
 }
 wpscanMenu (){
   # wpscan --update
-  wpOptions_defaults=$true
   wpscanMenu_choice=$(whiptail --backtitle "Soflane toolbox"  --menu --notags  "$wpscanMainMenuTitle" 18 100 10 "${wpscanMainMenu[@]}" 3>&1 1>&2 2>&3)
   if [ -z "$wpscanMenu_choice" ]; then
     echo "No option was chosen (user hit Cancel)"
@@ -178,15 +177,21 @@ wpscanMenu (){
 }
 
 wpscanLauncher(){
+  target_url=https://lol.com
+  args=""
   if [ -z "$target_url" ]; then
     whiptail --backtitle "Soflane toolbox" --msgbox "No URL set! Will ask you on next screen..." 10 100
     URLValidation
   fi
-  if [ $wpOptions_defaults ]; then
-    wpscan --url $target_url --ignore-main-redirect
-  else
-    wpscan --url $target_url --ignore-main-redirect --enumerate $wpOptions
+  if [ $wpOptions_defaults == "false" ]; then
+    args="--enumerate $wpOptions"
+    echo "add wpOptions"
   fi
+  if [[ -n "${WPSCAN_API}" ]]; then
+    args="$args --api-token $WPSCAN_API"
+    echo "add API"
+  fi
+  echo "wpscan --url $target_url --ignore-main-redirect $args"
   read -n 1 -r -s -p $'Press enter to continue...\n'; clear
 }
 wpscanConfigMenu() {
@@ -211,7 +216,7 @@ wpscanConfigMenu() {
           options="${options},${choice}"
         done
         wpOptions=$options
-        wpOptions_defaults=$false
+        wpOptions_defaults=false
         wpscanMenu
       fi
     fi
