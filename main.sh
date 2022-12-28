@@ -177,11 +177,15 @@ wpscanMenu (){
 }
 
 wpscanLauncher(){
-  target_url=https://lol.com
+  
   args=""
   if [ -z "$target_url" ]; then
-    whiptail --backtitle "Soflane toolbox" --msgbox "No URL set! Will ask you on next screen..." 10 100
-    URLValidation
+    if [[ -n "${WPSCAN_TARGET_URL}" ]]; then
+      target_url=$WPSCAN_TARGET_URL
+    else
+      whiptail --backtitle "Soflane toolbox" --msgbox "No URL set! Will ask you on next screen..." 10 100
+      URLValidation
+    fi
   fi
   if [ $wpOptions_defaults == "false" ]; then
     args="--enumerate $wpOptions"
