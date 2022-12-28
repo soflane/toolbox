@@ -63,14 +63,11 @@ nexfilMainMenu=(1 "Specify username"
                 3 "Specify multiple comma separated usernames" 
                 4 "Specify timeout [Default : 5]" 
                 5 "Back to main menu" )
-
-
 wpscanMainMenuTitle="What do you want to do?"
 wpscanMainMenu=(1 "Configure WPscan options" 
                 2 "Set target website" 
                 3 "Start WPScan" 
                 4 "Back to main menu" )
-
 wpConfigPluginsMenuTitle="Which plugins do you want to scan on target?"
 wpConfigPluginsRadioMenu=("vp" "Vulnerable plugins" OFF
                           "ap" "All plugins" ON
@@ -90,7 +87,6 @@ wpConfigChecklistItems=("tt"     "Timthumbs" OFF
                         "u1-100" "User IDs range 1-100" ON
                         "m1-100" "Media IDs range 1-100" ON
                         )
-
 wpOptions=""
 wpOptions_defaults=true
 
@@ -108,23 +104,32 @@ mosintMenu () {
     else
       echo "Email address $email is invalid."
       email="invalid"
+      if [[ -n "${email}" ]]; then
+        email="cancelled"
+        break
+      fi
     fi
     tries=$(( $tries + 1 ))
   done
   if [ $email == 'invalid' ]
   then
     echo "Adress must be valid. Exiting..."
+    unset email
     exit
+  elif [ $email == 'cancelled' ]; then
+    unset email
   else
     mosint $email
   fi
 }
+
 URLValidation (){
   tries=1
   while [ $tries -le 3 ]
   do
     url=$(whiptail --backtitle "Soflane toolbox" --inputbox "Please the website target :" 10 100 3>&1 1>&2 2>&3)
     echo
+    
     if [[ "$url" =~ $URLregex ]]
     then
       echo "URL $url is valid."
@@ -133,19 +138,26 @@ URLValidation (){
     else
       whiptail --backtitle "Soflane toolbox" --msgbox "URL must be valid." 10 100
       url="invalid"
+      if [[ -n "${url}" ]]; then
+        url="cancelled"
+        break
+      fi
     fi
     tries=$(( $tries + 1 ))
   done
-  if [ $url == 'invalid' ]
-  then
+  if [ $url == 'invalid' ]; then
     echo "URL must be valid. Exiting..."
     whiptail --backtitle "Soflane toolbox" --msgbox "URL must be valid. Exiting..." 10 100
+    unset url
     exit
+  elif [ $url == 'cancelled' ]; then
+    unset url
   else
     target_url=$url
     # wpscan --url $url --ignore-main-redirect --enumerate u 
   fi
 }
+
 wpscanMenu (){
   # wpscan --update
   wpscanMenu_choice=$(whiptail --backtitle "Soflane toolbox"  --menu --notags  "$wpscanMainMenuTitle" 18 100 10 "${wpscanMainMenu[@]}" 3>&1 1>&2 2>&3)
@@ -168,16 +180,9 @@ wpscanMenu (){
       ;;
     esac
   fi
-
-
-
-
-
-
 }
 
 wpscanLauncher(){
-  
   args=""
   if [ -z "$target_url" ]; then
     if [[ -n "${WPSCAN_TARGET_URL}" ]]; then
@@ -195,9 +200,12 @@ wpscanLauncher(){
     args="$args --api-token $WPSCAN_API"
     echo "add API"
   fi
-  echo "wpscan --url $target_url --ignore-main-redirect $args"
-  read -n 1 -r -s -p $'Press enter to continue...\n'; clear
+  if [ -n "$target_url" ]; then
+    wpscan -o /output/wpscan-$(echo "$target_url" | tr " " "\n"  | sed 's/^"//; s/"$//; s~^https\?://~~; s/:[0-9]\+$//').txt --url $target_url --ignore-main-redirect $args
+    read -n 1 -r -s -p $'Press enter to continue...\n'; clear
+  fi
 }
+
 wpscanConfigMenu() {
   wpPluginsMenu_choice=$(whiptail --backtitle "Soflane toolbox" --separate-output --radiolist "$wpConfigPluginsMenuTitle" 18 100 10 "${wpConfigPluginsRadioMenu[@]}" 3>&1 1>&2 2>&3)
   if [ -z "$wpPluginsMenu_choice" ]; then
@@ -284,6 +292,4 @@ do
           exit 
           ;;
   esac
-
 done
-
